@@ -39,7 +39,7 @@ void superblock_summary() {
     if(pread(fd, &sb, sizeof(struct ext2_super_block), SB_OFFSET) < 0){
         pread_error();
     }
-    blockSize = 1024 << sb.log_block_size;
+    blockSize = 1024 << sb.s_log_block_size;
     fprintf(stdout, "SUPERBLOCK,%d,%d,%d,%d,%d,%d,%d\n", 
 		sb.s_blocks_count,      //number of blocks
 		sb.s_inodes_count,      //number of inodes
@@ -52,17 +52,17 @@ void superblock_summary() {
 }
 
 void group_summary() {
-    numOfGroups = super.s_blocks_count / super.s_blocks_per_group + 1;
+    numOfGroups = sb.s_blocks_count / sb.s_blocks_per_group + 1;
 
     group = malloc(numOfGroups * sizeof(struct ext2_group_desc));
 
-    for (int i; i < numOfGroups; i++){
+    for (int i = 0; i < numOfGroups; i++){
         if(pread(fd, &group[i], sizeof(struct ext2_group_desc), SB_OFFSET + BLOCK_SIZE + i * sizeof(struct ext2_group_desc)) < 0){
             pread_error();
         }
         // if the last group, will contain the remainder of the blocks
-        int blocksPerGroup = (i == numOfGroups-1) ? (super.s_blocks_count % super.s_blocks_per_group) : sb.s_blocks_per_group;
-        int inodesPerGroup = (i == numOfGroups-1) ? (super.s_inodes_count % super.s_inodes_per_group) : sb.s_inodes_per_group;
+        int blocksPerGroup = (i == numOfGroups-1) ? (sb.s_blocks_count % sb.s_blocks_per_group) : sb.s_blocks_per_group;
+        int inodesPerGroup = (i == numOfGroups-1) ? (sb.s_inodes_count % sb.s_inodes_per_group) : sb.s_inodes_per_group;
         fprintf(stdout, "GROUP,%d,%d,%d,%d,%d,%d,%d,%d\n",
             i, //group number
             blocksPerGroup, //total number of blocks in this group
