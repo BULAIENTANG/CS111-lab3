@@ -76,6 +76,13 @@ void group_summary() {
     }
 }
 
+void get_time_GMT(time_t t, char* buffer)
+{
+    time_t to_convert = t;
+    struct tm ts = *gmtime(&to_convert);
+    strftime(buffer, 80, "%m/%d/%y %H:%M:%S", &ts);
+}
+
 int main(int argc, char* argv[]){
     if(argc != 2){
         fprintf(stderr, "%s\n", "Bad arguments");
