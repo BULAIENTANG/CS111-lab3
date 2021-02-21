@@ -83,6 +83,128 @@ void get_time_GMT(time_t t, char* buffer)
     strftime(buffer, 80, "%m/%d/%y %H:%M:%S", &ts);
 }
 
+unsigned long get_offset (int block)
+{
+    return (unsigned long) BLOCK_SIZE * block;
+}
+
+
+void scan_free_block(int num, unsigned int block)
+{
+    unsigned int index = sb.s_first_data_block + sb.s_blocks_per_group * num;
+    char* bitmap = (char *) malloc(BLOCK_SIZE);
+    unsigned long offset = get_offset(block);
+    if (pread(fd, bitmap, BLOCK_SIZE, offset) < 0) {
+        pread_error();
+    }
+    unsigned int j, k;
+    for (j = 0; j < BLOCK_SIZE; j++)
+    {
+        char c = bitmap[j];
+        for (k = 0; k < 8; k++)
+        {
+            // note that 1 indicates the block is used
+            // o indicates the block is free
+            int bit = c & 1;
+            if (!bit)
+                fprintf(stdout, "BFREE,%d\n", index);
+            // shift the c to the left to get the next bit
+            c = c >> 1;
+            index++;  
+        }
+    }
+    free(bitmap);
+}
+
+char get_filetype (__u16 i_mode)
+{
+    char file_type;
+    uint16_t file_descriptor = (i_mode >> 12) << 12;
+    if (file_descriptor == 0x8000)
+        file_type = 'f';
+    else if (file_descriptor == 0x4000)
+        file_type = 'd';
+    else if (file_descriptor == 0xa000)
+        file_type = 's';
+    else
+        file_type = '?';
+    return file_type;
+}
+
+void inode_summary (unsigned int inode_table_index, unsigned int id, unsigned int num_inode)
+{
+
+    unsigned long offset = get_offset(inode_table_index) + sizeof(inode) * id;
+    if (pread(fd, &inode, sizeof(inode), offset) < 0)
+        pread_error();
+    
+    char file_type = get_filetype(inode.i_mode);
+
+
+
+    char creation_time[20];
+    char modified_time[20];
+    char access_time[20];
+    get_time_GMT(inode.i_ctime, creation_time);
+    get_time_GMT(inode.i_mtime, modified_time);
+    get_time_GMT(inode.i_atime, access_time);
+
+    fprintf(stdout, "INODE,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d",
+        num_inode, // the inode number
+        file_type, // the file type
+        inode.i_mode & 0xFFF, // the lower 12 bits of imode
+        inode.i_uid, // owner uid
+        inode.i_gid, // group id
+        inode.i_links_count, // links count
+        creation_time, // creation time
+        modified_time, // modified time
+        access_time, // access time
+        inode.i_size, // file size
+        inode.i_blocks // num of blocks
+    );
+    
+    for (unsigned int k = 0; k < 15; k++)
+    {
+        fprintf(stdout, ",%u", inode.i_block[k]);
+    }
+    fprintf(stdout, "\n");
+
+    if (file_type == 'd')
+    {
+        // print directory
+    }
+
+    // indirect
+    if (inode.i_block[EXT2_IND_BLOCK] != 0)
+    {
+        // single indirect block
+    }
+
+    if (inode.i_block[EXT2_DIND_BLOCK] != 0)
+    {
+        // double indirect block
+    }
+    if (inode.i_block[EXT2_TIND_BLOCK] != 0)
+    {
+        // triple indirect block
+    }
+
+
+
+}
+
+
+// num stands for the index of group
+void scan_inode (int num, int block, int inode_table_index)
+{
+
+}
+
+void directory_entries()
+{
+
+}
+
 int main(int argc, char* argv[]){
     if(argc != 2){
         fprintf(stderr, "%s\n", "Bad arguments");
