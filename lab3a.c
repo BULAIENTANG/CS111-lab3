@@ -18,6 +18,7 @@
 #define SB_OFFSET 1024
 
 int fd = -1;
+int directory_block_num = -1;
 struct ext2_super_block sb;
 struct ext2_inode inode;
 struct ext2_group_desc* group;
@@ -213,7 +214,7 @@ void directory_entries(unsigned int block_num, int inode_num)
                     file_name[dir_entry -> name_len] = 0;
                     fprintf(stdout, "DIRENT,%d,%d,%d,%d,%d,'%s'\n",
                         inode_num, // parent inode number
-                        iter, // logical byte offset
+                        iter + directory_block_num * blockSize, // logical byte offset
                         dir_entry -> inode, // inode number
                         dir_entry -> rec_len, // entry length
                         dir_entry -> name_len, // name length
@@ -223,7 +224,7 @@ void directory_entries(unsigned int block_num, int inode_num)
                 iter += dir_entry -> rec_len;
             }
         }
-
+    directory_block_num++;
     free(dir_entry);
 }
 
@@ -319,6 +320,7 @@ void inode_summary (unsigned int offset, unsigned int inode_num)
         //12 direct
         if (file_type == 'd')
         {
+            directory_block_num = 0;
             for (int k = 0; k < 12; k++)
             {
                 unsigned int block_num = inode.i_block[k];
