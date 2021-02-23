@@ -36,7 +36,7 @@ void get_time_GMT(time_t t, char* buffer);
 unsigned long get_offset (int block);
 char get_filetype (__u16 i_mode);
 void directory_entries(struct ext2_inode* inode, int inode_num);
-void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, char file_tyle, struct ext2_inode* inode);
+void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, int original_l, char file_tyle, struct ext2_inode* inode);
 void inode_summary (unsigned int offset, unsigned int inode_num);
 void scan_free_block(int num, unsigned int block);
 void scan_inode (int num, int block, int inode_table_index);
@@ -68,19 +68,13 @@ void group_summary() {
 
     group = malloc(numOfGroups * sizeof(struct ext2_group_desc));
 
-    uint32_t start_index = 0;
-    if (blockSize > 1024)
-        start_index = 1;
-    else
-        start_index = 2;
-
     for (int i = 0; i < numOfGroups; i++){
-        if(pread(fd, &group[i], sizeof(struct ext2_group_desc), start_index * blockSize + i * sizeof(struct ext2_group_desc)) < 0){
+        if(pread(fd, &group[i], sizeof(struct ext2_group_desc), SB_OFFSET + blockSize + i * sizeof(struct ext2_group_desc)) < 0){
             pread_error();
         }
         // if the last group, will contain the remainder of the blocks
         int blocksPerGroup = (i == numOfGroups-1) ? (sb.s_blocks_count % sb.s_blocks_per_group) : sb.s_blocks_per_group;
-        int inodesPerGroup = (i == numOfGroups-1) ? (sb.s_inodes_count % sb.s_inodes_per_group) : sb.s_inodes_per_group;
+        int inodesPerGroup = (i == numOfGroups-1 && i != 0) ? (sb.s_inodes_count % sb.s_inodes_per_group) : sb.s_inodes_per_group;
         fprintf(stdout, "GROUP,%d,%d,%d,%d,%d,%d,%d,%d\n",
             i, //group number
             blocksPerGroup, //total number of blocks in this group
@@ -174,7 +168,7 @@ void directory_entries(struct ext2_inode* inode, int inode_num)
                     char file_name[EXT2_NAME_LEN+1];
                     memcpy(file_name, dir_entry -> name, dir_entry -> name_len);
                     file_name[dir_entry -> name_len] = 0;
-                    fprintf(stdout, "DIRECT,%d,%d,%d,%d,%d,'%s'\n",
+                    fprintf(stdout, "DIRENT,%d,%d,%d,%d,%d,'%s'\n",
                         inode_num,
                         iter,
                         dir_entry -> inode,
@@ -190,7 +184,7 @@ void directory_entries(struct ext2_inode* inode, int inode_num)
     free(dir_entry);
 }
 
-void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, char file_tyle, struct ext2_inode* inode)
+void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, int original_l, char file_tyle, struct ext2_inode* inode)
 {
     uint32_t *block_pts = malloc(blockSize);
     unsigned long offset = get_offset(block_num);
@@ -199,7 +193,7 @@ void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, ch
     
     int logical_offset = 0;
     int i_block_num = blockSize/4;
-    switch (l)
+    switch (original_l)
     {
     case 1:
         logical_offset = 12;
@@ -217,7 +211,7 @@ void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, ch
     {
         if (block_pts[k] != 0)
         {
-            if (file_tyle == 'd')
+            if (file_tyle == 'd' && l == 1)
                 directory_entries(inode, inode_num);
             fprintf(stdout, "INDIRECT,%d,%d,%d,%d,%d\n",
             inode_num,
@@ -227,7 +221,7 @@ void indirect_summary (unsigned int inode_num, unsigned int block_num, int l, ch
             block_pts[k]);
         }
         if (l > 1)
-            indirect_summary(inode_num, block_pts[k], l-1, file_tyle, inode);
+            indirect_summary(inode_num, block_pts[k], l-1, original_l, file_tyle, inode);
     }
 
     free(block_pts);
@@ -267,22 +261,22 @@ void inode_summary (unsigned int offset, unsigned int inode_num)
         fprintf(stdout, ",%u", inode.i_block[0]);
     else
     {
-        for (unsigned int k = 0; k < 15; k++)
-            fprintf(stdout, ",%u", inode.i_block[k]);
+        for (int i = 0; i < 15; i++)
+            fprintf(stdout, ",%u", inode.i_block[i]);
         fprintf(stdout, "\n");
 
+        //12 direct
         if (file_type == 'd')
             directory_entries(&inode, inode_num);
-
         // indirect
-        if (inode.i_block[EXT2_IND_BLOCK] != 0)
-            indirect_summary(inode_num, inode.i_block[EXT2_IND_BLOCK], 1, file_type, &inode);
+        if (inode.i_block[EXT2_IND_BLOCK] != 0) // 13th
+            indirect_summary(inode_num, inode.i_block[EXT2_IND_BLOCK], 1, 1,file_type, &inode);
             
-        if (inode.i_block[EXT2_DIND_BLOCK] != 0)
-            indirect_summary(inode_num, inode.i_block[EXT2_DIND_BLOCK], 2, file_type, &inode);
+        if (inode.i_block[EXT2_DIND_BLOCK] != 0) // 14th
+            indirect_summary(inode_num, inode.i_block[EXT2_DIND_BLOCK], 2, 2,file_type, &inode);
 
-        if (inode.i_block[EXT2_TIND_BLOCK] != 0)
-            indirect_summary(inode_num, inode.i_block[EXT2_TIND_BLOCK], 3, file_type, &inode);
+        if (inode.i_block[EXT2_TIND_BLOCK] != 0) // 15th
+            indirect_summary(inode_num, inode.i_block[EXT2_TIND_BLOCK], 3, 3,file_type, &inode);
     }
     
 

@@ -12,5 +12,5 @@ default:
 clean: 
 	rm -rf $(TARGET) *.tar.gz
 
-dist: graphs
+dist:
 	tar -cvzf $(TARGET)-605318712.tar.gz ext2_fs.h $(TARGET).c Makefile README
