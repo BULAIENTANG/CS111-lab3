@@ -311,6 +311,8 @@ void inode_summary (unsigned int offset, unsigned int inode_num)
             fprintf(stdout, ",%d", inode.i_block[k]);
         fprintf(stdout, "\n");
     }
+    else if (file_type == 's' && inode.i_size < 60)
+        fprintf(stdout, "\n");
     else if (file_type == 'f' || file_type == 'd')
     {
         for (int i = 0; i < 15; i++)
