@@ -6,7 +6,7 @@ TARGET=lab3b
 
 default:
 	rm -rf lab3b
-	ln -s lab3b.py lab3b
+	ln run_lab3b lab3b
 	chmod +x lab3b
 
 clean: 

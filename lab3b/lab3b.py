@@ -1,7 +1,7 @@
 # NAME:		Bryan Tang, Zhengtong Liu
 # EMAIL: 	tangtang1228@ucla.edu, ericliu2023@g.ucla.edu
 # ID:    	605318712, 505375562
-
+# !/usr/bin/env python3
 import sys
 
 isConsistent = True
