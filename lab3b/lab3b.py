@@ -204,7 +204,7 @@ def read_csv(file):
         parent_inode = inode_par_array[child_inode]
         # not sure
         if (dir_name == "'..'") and child_inode != parent_inode:
-            print('DIRECTORY INODE ' + str(parent_inode) + ' NAME ' + str(dir_name) + ' LINK TO INODE ' + str(child_inode))
+            print('DIRECTORY INODE ' + str(parent_inode) + ' NAME ' + str(dir_name) + ' LINK TO INODE ' + str(child_inode) + ' SHOULD BE ' + str(parent_inode))
             isConsistent = False
 
     for child_inode in inode_link_counts:
@@ -216,7 +216,7 @@ def read_csv(file):
             actual_link = inode_ref_array[child_inode]
         
         if actual_link != link_counts:
-            print('INODE ' + str(child_inode) + ' HAS ' + str(actual_link) + ' LINKS BUT LINKCOUT IS ' + str(link_counts))
+            print('INODE ' + str(child_inode) + ' HAS ' + str(actual_link) + ' LINKS BUT LINKCOUNT IS ' + str(link_counts))
             isConsistent = False
         
     return isConsistent
