@@ -1,15 +1,17 @@
 # NAME:		Bryan Tang, Zhengtong Liu
 # EMAIL: 	tangtang1228@ucla.edu, ericliu2023@g.ucla.edu
 # ID:    	605318712, 505375562
-# !/usr/bin/env python3
+
+
+#       Boot block |    Block Group 0   | Block Group 1 | ... | Block Group N
+#                  /                    \       
+#                 /                      \
+# superblock |GroupDescriptors |BlockBitmap |InodeBitmap |InodeTable |DataBlock
 import sys
 
 isConsistent = True
 bfree = []
 ifree = []
-indir = []
-diren = []
-inodes = []
 
 inode_link_counts = {} # key: inode_num; value: link counts (theoretical)
 inode_dir_name = {} # key: inode_num; value: dir_name
@@ -52,36 +54,36 @@ def read_csv(file):
             ifree.append(int(fields[1]))
         elif Type == 'INODE':
             inodeNum = int(fields[1])
-            # fileType = fields[2]
+            fileType = fields[2]
             # mode = int(fields[3])
             # owner = int(fields[4])
             # group = int(fields[5])
-            linkCount = int(fields[6])
-            inode_link_counts[inodeNum] = linkCount
+            inode_link_counts[inodeNum] = int(fields[6])
 
-            for i in range(12,27):
-                blockNum = int(fields[i])
+            if fileType != 's':
+                for i in range(12,27):
+                    blockNum = int(fields[i])
 
-                if blockNum == 0: #skip if 0
-                    continue
-                if i < 24:
-                    blockType = 'BLOCK'
-                    offset = 0
-                    level = 0
-                elif i == 24:
-                    blockType = 'INDIRECT BLOCK'
-                    offset = 12
-                    level = 1
-                elif i == 25:
-                    blockType = 'DOUBLE INDIRECT BLOCK'
-                    offset = 12 + 256
-                    level = 2
-                elif i == 26:
-                    blockType = 'TRIPLE INDIRECT BLOCK'
-                    offset = 12 + 256 + 256**2
-                    level = 3
-                
-                block_consistency_audits(blockType, blockNum, inodeNum, offset, level)
+                    if blockNum == 0: #skip if 0
+                        continue
+                    if i < 24:
+                        blockType = 'BLOCK'
+                        offset = 0
+                        level = 0
+                    elif i == 24:
+                        blockType = 'INDIRECT BLOCK'
+                        offset = 12
+                        level = 1
+                    elif i == 25:
+                        blockType = 'DOUBLE INDIRECT BLOCK'
+                        offset = 12 + 256
+                        level = 2
+                    elif i == 26:
+                        blockType = 'TRIPLE INDIRECT BLOCK'
+                        offset = 12 + 256 + 256**2
+                        level = 3
+                    
+                    block_consistency_audits(blockType, blockNum, inodeNum, offset, level)
 
         elif Type == 'INDIRECT':
             inodeNum = int(fields[1])
@@ -111,6 +113,11 @@ def read_csv(file):
             # slice off the '\n' character
             dirName = dirName[:-1]
 
+            if refInodeNum in inode_ref_array:
+                inode_ref_array[refInodeNum] = inode_ref_array[refInodeNum] + 1
+            else:
+                inode_ref_array[refInodeNum] = 1
+
             directory_consistency_audits(parentInodeNum, refInodeNum, dirName)
         
     # check for allocation, duplication, and unreference of blocks
@@ -132,15 +139,11 @@ def block_consistency_audits(block_type, block_num, inode_num, offset, level):
     if block_num < non_reserved_block_start:
         print('RESERVED ' + block_type + ' ' + str(block_num) + ' IN INODE ' + str(inode_num) + ' AT OFFSET ' + str(offset))
         isConsistent = False
-    # allocated
-
     # duplicated
-
     if block_num in blockDict:
         blockDict[block_num].append([inode_num, level])
-    else:
+    else: # not in blockDict
         blockDict[block_num] = [[inode_num, level]]
-    return
 
 def inode_allocation_audits():
     for k in range(inodes_count):
@@ -151,8 +154,6 @@ def inode_allocation_audits():
         if (index not in ifree) and (index not in inode_link_counts):
             print('UNALLOCATED INODE ' + str(index) + ' NOT ON FREELIST')
             isConsistent = False
-
-    return
 
 
 def directory_check_audits():
@@ -182,12 +183,11 @@ def directory_check_audits():
             print('INODE ' + str(child_inode) + ' HAS ' + str(actual_link) + ' BUT LINKCOUT IS ' + str(link_counts))
             isConsistent = False
         
-    
 
 def directory_consistency_audits(parent_inode_num, inode_num, dir_name):
 
     inode_dir_name[inode_num] = str(dir_name)
-    # valid
+    # invalid
     if inode_num < 1 or inode_num > inodes_count:
         print('DIRECTORY INODE ' + str(parent_inode_num) + ' NAME ' + str(dir_name) + ' INVALID INODE ' + str(inode_num))
         isConsistent = False
@@ -235,8 +235,6 @@ def block_check_audits():
                     offset = 12 + 256 + 256**2
                 
                 print('DUPLICATE ' + blockType + ' ' + str(blk) + ' IN INODE ' + str(inode_num) + ' AT OFFSET ' + str(offset))
-        
-    return
 
 
 def main():

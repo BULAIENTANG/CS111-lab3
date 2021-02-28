@@ -4,14 +4,14 @@
 
 TARGET=lab3b
 
-default:
-	rm -rf lab3b
+default: lab3b.py
+	rm -f lab3b
 	ln run_lab3b lab3b
 	chmod +x lab3b
 
 clean: 
-	rm -rf $(TARGET) *.tar.gz
+	rm -f $(TARGET) *.tar.gz
 
 dist:
-	tar -cvzf $(TARGET)-605318712.tar.gz $(TARGET).c Makefile README
-	# tar -cvzf $(TARGET)-505375562.tar.gz $(TARGET).c Makefile README
+	tar -cvzf $(TARGET)-605318712.tar.gz $(TARGET).py run_$(TARGET) Makefile README
+	# tar -cvzf $(TARGET)-505375562.tar.gz $(TARGET).py run_$(TARGET) Makefile README
