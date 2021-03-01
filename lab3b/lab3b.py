@@ -149,7 +149,7 @@ def read_csv(file):
                 inode_par_array[inode_num] = parent_inode_num
         
     # check for allocation, duplication, and unreference of blocks
-     # check allocation and reference
+    # check allocation and reference
     for k in range(blocks_count-1):
         index = k + 1
         if (index in blockDict) and (index in bfree):
