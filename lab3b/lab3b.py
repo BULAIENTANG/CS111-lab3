@@ -93,11 +93,12 @@ def block_consistency_audits(blockDict, blocks_count, bfree, non_reserved_block_
 
 def main():
     global isConsistent
-
+    # check the number of arguments; if apart from the name of executable, the arugment is not
+    # one, then the argument(s) is/are invalid
     if len(sys.argv) != 2:
         sys.stderr.write("Invalid Argument(s)\n")
         exit(1)
-
+    # attemp to open the input file
     try:
         file = open(sys.argv[1], "r")
     except:
