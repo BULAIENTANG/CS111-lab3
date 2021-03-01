@@ -19,7 +19,7 @@ def directory_consistency_audits(inode_dir_info, inode_par_array, inode_link_cou
         dir_name = inode_dir_info[child_inode][0]
         parent_inode = inode_dir_info[child_inode][1]
         if (child_inode in ifree) and (child_inode in inode_par_array):
-            print('DIRECTORY INODE {} NAME {} UNALLOCATED INODE {}',format(str(parent_inode), str(dir_name), str(child_inode)))
+            print(f'DIRECTORY INODE {str(parent_inode)} NAME {str(dir_name)} UNALLOCATED INODE {str(child_inode)}')
             isConsistent = False
 
     # parent mismatch
@@ -28,7 +28,7 @@ def directory_consistency_audits(inode_dir_info, inode_par_array, inode_link_cou
         parent_inode = inode_par_array[child_inode]
 
         if (dir_name == "'..'") and child_inode != parent_inode:
-            print('DIRECTORY INODE {} NAME {} LINK TO INODE {} SHOULD BE {}',format(str(parent_inode), str(dir_name), str(child_inode), str(parent_inode)))
+            print(f'DIRECTORY INODE {str(parent_inode)} NAME {str(dir_name)} LINK TO INODE {str(child_inode)} SHOULD BE {str(parent_inode)}')
             isConsistent = False
 
     # link counts mismatch
@@ -41,7 +41,7 @@ def directory_consistency_audits(inode_dir_info, inode_par_array, inode_link_cou
             actual_link = inode_ref_counts[child_inode]
         
         if actual_link != link_counts:
-            print('INODE {} HAS {} LINKS BUT LINKCOUNT IS {}',format(str(child_inode), str(actual_link), str(link_counts)))
+            print(f'INODE {str(child_inode)} HAS {str(actual_link)} LINKS BUT LINKCOUNT IS {str(link_counts)}')
             isConsistent = False
 
 def inode_allocation_audits(inode_link_counts, inodes_count, ifree, first_inode):
@@ -51,10 +51,10 @@ def inode_allocation_audits(inode_link_counts, inodes_count, ifree, first_inode)
     for k in range(inodes_count):
         index = k + 1
         if (index in ifree) and (index in inode_link_counts):
-            print('ALLOCATED INODE {} ON FREELIST',format(str(index)))
+            print(f'ALLOCATED INODE {str(index)} ON FREELIST')
             isConsistent = False
         elif (index not in ifree) and (index not in inode_link_counts) and (index >= first_inode or index == 2):
-            print('UNALLOCATED INODE {} NOT ON FREELIST',format(str(index)))
+            print(f'UNALLOCATED INODE {str(index)} NOT ON FREELIST')
             isConsistent = False
 
 def block_consistency_audits(blockDict, blocks_count, bfree, non_reserved_block_start):
@@ -64,10 +64,10 @@ def block_consistency_audits(blockDict, blocks_count, bfree, non_reserved_block_
     for k in range(blocks_count-1):
         index = k + 1
         if (index in blockDict) and (index in bfree):
-            print('ALLOCATED BLOCK {} ON FREELIST',format(str(index)))
+            print(f'ALLOCATED BLOCK {str(index)} ON FREELIST')
             isConsistent = False
         elif (index not in blockDict) and (index not in bfree) and (index >= non_reserved_block_start):
-            print('UNREFERENCED BLOCK {}',format(str(index)))
+            print(f'UNREFERENCED BLOCK {str(index)}')
             isConsistent = False
 
     # check duplication
@@ -88,7 +88,7 @@ def block_consistency_audits(blockDict, blocks_count, bfree, non_reserved_block_
                 elif level == 3:
                     blockType = 'TRIPLE INDIRECT BLOCK'
                     offset = 12 + 256 + 256**2
-                print('DUPLICATE {} {} IN INODE {} AT OFFSET {}',format(blockType, str(blk), str(inode_num), str(offset)))
+                print(f'DUPLICATE {blockType} {str(blk)} IN INODE {str(inode_num)} AT OFFSET {str(offset)}')
                 isConsistent = False
 
 def main():
@@ -182,11 +182,11 @@ def main():
                         level = 3
                     # invalid
                     if blockNum < 0 or blockNum > blocks_count:
-                        print('INVALID {} {} IN INODE {} AT OFFSET {}',format(blockType, str(blockNum), str(inodeNum), str(offset)))
+                        print(f'INVALID {blockType} {str(blockNum)} IN INODE {str(inodeNum)} AT OFFSET {str(offset)}')
                         isConsistent = False
                     # reserved
                     if 0 < blockNum < non_reserved_block_start:
-                        print('RESERVED {} {} IN INODE {} AT OFFSET {}',format(blockType, str(blockNum), str(inodeNum), str(offset)))
+                        print(f'RESERVED {blockType} {str(blockNum)} IN INODE {str(inodeNum)} AT OFFSET {str(offset)}')
                         isConsistent = False
                     # duplicated
                     elif blockNum in blockDict:
@@ -211,11 +211,11 @@ def main():
                 offset = 12 + 256 + 256**2
             # invalid 
             if blockNum < 0 or blockNum > blocks_count:
-                print('INVALID {} {} IN INODE {} AT OFFSET {}',format(blockType, str(blockNum), str(inodeNum), str(offset)))
+                print(f'INVALID {blockType} {str(blockNum)} IN INODE {str(inodeNum)} AT OFFSET {str(offset)}')
                 isConsistent = False
             # reserved
             if blockNum < non_reserved_block_start:
-                print('RESERVED {} {} IN INODE {} AT OFFSET {},',format(blockType, str(blockNum), str(inodeNum), str(offset)))
+                print(f'RESERVED {blockType} {str(blockNum)} IN INODE {str(inodeNum)} AT OFFSET {str(offset)}')
                 isConsistent = False
             # duplicated
             elif blockNum in blockDict:
@@ -239,11 +239,11 @@ def main():
         
             # invalid
             if inode_num < 1 or inode_num > inodes_count:
-                print('DIRECTORY INODE {} NAME {} INVALID INODE {}',format(str(parent_inode_num), str(dir_name), str(inode_num)))
+                print(f'DIRECTORY INODE {str(parent_inode_num)} NAME {str(dir_name)} INVALID INODE {str(inode_num)}')
                 isConsistent = False
             # current mismatch
             if str(dir_name) == "'.'" and parent_inode_num != inode_num:
-                print('DIRECTORY INODE {} NAME {} LINK TO {} SHOULD BE {}',format(str(parent_inode_num), str(dir_name), str(inode_num), str(parent_inode_num)))
+                print(f'DIRECTORY INODE {str(parent_inode_num)} NAME {str(dir_name)} LINK TO {str(inode_num)} SHOULD BE {str(parent_inode_num)}')
                 isConsistent = False
             # keep track of the parent of an inode for parent mismatch afterwards
             if str(dir_name) != "'.'" and str(dir_name) != "'..'":
